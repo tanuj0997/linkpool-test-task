@@ -1,0 +1,31 @@
+#!groovy
+
+import jenkins.model.*
+import hudson.security.*
+import hudson.util.*;
+import jenkins.install.*;
+
+
+def instance = Jenkins.getInstance()
+def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+
+// create the admin user
+hudsonRealm.createAccount("{{ jenkins_username }}","{{ jenkins_password }}")
+instance.setSecurityRealm(hudsonRealm)
+
+// disable anonymous login
+def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+strategy.setAllowAnonymousRead(false)
+instance.setAuthorizationStrategy(strategy)
+
+// disable setup wizard
+instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+
+// fix build URL and admin email address
+cfg = JenkinsLocationConfiguration.get()
+cfg.setUrl("http://{{ inventory_hostname }}:8080")
+cfg.setAdminAddress("devops@linkpool.org")
+cfg.save()
+
+// save all changes
+instance.save()

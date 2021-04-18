@@ -1,0 +1,40 @@
+---
+- name: Install jenkins depedencies
+  package:
+    name: java-1.8.0-openjdk
+    state: present
+
+- name: Install jenkins repository
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
+- name: Get Jenkins repo keys
+  rpm_key:
+    state: present
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+- name: install jenkins package
+  package:
+    name: jenkins-2.263.1 # LTS version
+    state: present
+
+- name: Disable jenkins setup wizard
+  lineinfile:
+    path: /etc/sysconfig/jenkins
+    regexp: '^JENKINS_JAVA_OPTIONS=.*'
+    line: JENKINS_JAVA_OPTIONS="-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"
+
+- name: install groovy post install
+  template:
+    src: postinstall-setup.groovy.j2
+    dest: /var/lib/jenkins/init.groovy
+
+- name: start jenkins
+  systemd:
+    name: jenkins
+    state: started
+
+- name: print jenkins address
+  debug:
+    msg: "jenkins is running on http://{{ inventory_hostname }}:8080"

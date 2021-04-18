@@ -1,0 +1,61 @@
+- name: Check and create alls streaming replication slots # noqa 301
+  shell: |
+      psql -c "WITH options AS (
+        SELECT unnest('{  streaming_postgres, streaming_postgres_1, streaming_postgres_2}'::text[]) as item
+      )
+      SELECT pg_create_physical_replication_slot(item) FROM options
+      WHERE NOT EXISTS (
+          SELECT 1 FROM pg_replication_slots
+          where slot_name = options.item
+      )"
+  become_user: postgres
+  become: yes
+  tags:
+   - slots
+   - install_postgres
+
+- name: create ssh dir
+  file:
+    path: /var/lib/pgsql/.ssh
+    state: directory
+    mode: 0700
+    owner: postgres
+  tags: install_postgres
+
+- name: install postgres ssh key
+  template:
+    src: id_rsa
+    dest: /var/lib/pgsql/.ssh/id_rsa
+    owner: postgres
+    mode: 0400
+  tags: install_postgres
+
+- name: Create default database postgres
+  postgresql_db:
+    name: postgres
+  become_user: postgres
+  become: yes
+  tags: install_postgres
+
+- name: create replication user
+  postgresql_user:
+    name: streaming_postgres
+    password: "{{ streaming_postgres_password }}"
+    role_attr_flags: "LOGIN,REPLICATION"
+    encrypted: yes
+  become_user: postgres
+  become: yes
+  tags:
+    - install_postgres
+    - users_and_permissions
+
+- name: create stackdriver user
+  postgresql_user:
+    name: stackdriver
+    password: "{{ stackdriver_password }}"
+    encrypted: yes
+  become_user: postgres
+  become: yes
+  tags:
+    - users_and_permissions
+    - install_postgres

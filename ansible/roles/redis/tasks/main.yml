@@ -1,0 +1,75 @@
+---
+- name: Install redis prerequisites
+  yum:
+    name:
+      - gcc
+      - tcl
+      - make
+  tags: redis
+
+- name: Download redis source
+  get_url:
+    url: http://download.redis.io/releases/redis-{{ redis_version }}.tar.gz
+    dest: /tmp/redis-{{ redis_version }}.tar.gz
+    checksum: sha256:{{ redis_hashes[redis_version] }}
+  tags: redis
+
+- name: Untar redis
+  unarchive:
+    src: /tmp/redis-{{ redis_version }}.tar.gz
+    dest: /tmp
+    remote_src: yes
+  tags: redis
+
+- name: Build redis # noqa 301
+  command: make -C /tmp/redis-{{ redis_version }}
+  tags: redis
+
+- name: Test redis # noqa 301
+  command: make -C /tmp/redis-{{ redis_version }} test
+  tags: redis
+
+- name: Install redis # noqa 301
+  command: make -C /tmp/redis-{{ redis_version }} install
+  tags: redis
+
+- name: Install and configure redis service # noqa 301 306
+  shell: echo -e '{{ redis_port }}\n{{ redis_config_file }}\n{{ redis_log_file }}\n{{ redis_data_dir }}\n{{ redis_executable }}\n' | /tmp/redis-{{ redis_version }}/utils/install_server.sh
+  tags: redis
+
+- name: update the bind interface
+  replace:
+    path: /etc/redis/6379.conf
+    regexp: '^bind 127.0.0.1'
+    replace: 'bind 0.0.0.0'
+  tags:
+  - config
+
+- name: comment redis rdb backup
+  replace:
+    path: /etc/redis/6379.conf
+    regexp: '^save(.+)$'
+    replace: '#save \1'
+  when: nobackup is defined
+  tags:
+  - config
+
+- name: attempt a start to create pid file
+  systemd:
+    name: redis_{{ redis_port }}
+    state: started
+    enabled: yes
+  tags:
+  - restart
+
+- name: Enable Redis to start on boot and restart to bind to all interfaces
+  systemd:
+    name: redis_{{ redis_port }}
+    state: restarted
+    enabled: yes
+  tags:
+  - config
+
+- include_tasks: exporter.yml
+  tags:
+    - exporter

@@ -1,0 +1,7 @@
+redis_version: 5.0.5
+
+redis_port: 6379
+redis_config_file: /etc/redis/{{ redis_port }}.conf
+redis_log_file: /var/log/redis_{{ redis_port }}.log
+redis_data_dir: /var/lib/redis/{{ redis_port }}
+redis_executable: /usr/local/bin/redis-server

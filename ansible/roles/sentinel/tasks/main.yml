@@ -1,0 +1,34 @@
+---
+- name: install epel
+  yum:
+    name: epel-release
+
+- name: install python redis lib
+  yum:
+    name: python3-redis
+
+- name: upload sentinel config
+  template:
+    src: sentinel.conf
+    dest: /etc/redis-sentinel.conf
+
+- name: set slave config
+  redis:
+    command: slave
+    master_host: "{{ redis_master }}"
+    master_port: 6379
+  when: slave == "true"
+
+- name: upload systemd unit file
+  copy:
+    src: "{{ item }}"
+    dest: /usr/lib/systemd/system/{{ item }}
+  with_items:
+  - redis-sentinel.service
+
+- name: start sentinels
+  systemd:
+    name: redis-sentinel
+    state: started
+    daemon_reload: yes
+    enabled: yes

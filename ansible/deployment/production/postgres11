@@ -1,0 +1,10 @@
+[postgres]
+10.0.2.14 app_env=production type=primary  pglogical=true replication_source=10.0.2.3
+10.0.2.15 app_env=production type=replica  pglogical=false replication_slot_name=streaming_postgres_1
+10.0.2.16 app_env=production type=replica  pglogical=false replication_slot_name=streaming_postgres_2
+
+[postgres:vars]
+postgres_repository_url="https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+postgres_version=11
+
+# note that in the inventory, the primary should be listed first and then the replicas

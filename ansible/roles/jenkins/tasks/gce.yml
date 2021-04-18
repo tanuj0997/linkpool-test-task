@@ -1,0 +1,85 @@
+---
+- name: install python3 package
+  package:
+    name:
+      - python36-setuptools
+      - python36
+
+- name: get pip
+  easy_install:
+    name: pip
+    executable: easy_install-3.6
+
+- name: get circleci lib
+  pip:
+    executable: /usr/local/bin/pip3
+    name: circleci
+
+- name: upload k8s checker python scripts
+  copy:
+    src: "{{ loop_item }}"
+    dest: "/opt/{{ loop_item }}"
+  loop:
+  - k8s-objects.py
+  loop_control:
+    loop_var: loop_item
+  tags:
+  - k8s
+
+- name: upload k8s checker shell scripts
+  template:
+    src: "{{ loop_item }}"
+    dest: "/opt/{{ loop_item }}"
+  loop:
+  - check-k8s-deployments.sh
+  - check-k8s-objects.sh
+  loop_control:
+    loop_var: loop_item
+  tags:
+  - k8s
+
+- name: install dependencies
+  yum:
+    name:
+      - python-pip
+      - python-devel
+  tags:
+  - k8s
+
+- name: install kuberentes api
+  pip:
+    name: kubernetes
+  tags:
+  - k8s
+
+- name: kubernetes deployment checker cron
+  cron:
+    name: kubernetes deployment checker cron
+    job: "bash /opt/check-k8s-deployments.sh"
+    user: jenkins
+    weekday: 2
+    hour: 6
+    minute: 16
+  tags:
+  - k8s
+
+- name: kubernetes unused objects cron
+  cron:
+    name: kubernetes unused objects cron
+    job: "bash /opt/check-k8s-objects.sh"
+    user: jenkins
+    weekday: 2
+    hour: 6
+    minute: 26
+  tags:
+  - k8s
+
+- name: circle ci build check
+  copy:
+    src: circleci-status.py
+    dest: /opt/circleci-status.py
+
+- name: add cloud bucket object revert script
+  copy:
+    src: revert-bucket-objects.py
+    dest: /opt/revert-bucket-objects.py

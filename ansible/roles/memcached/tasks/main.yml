@@ -1,0 +1,16 @@
+---
+- name: install memcached
+  package:
+    name: memcached
+
+- name: upload memcached conf
+  template:
+    src: memcached
+    dest: /etc/sysconfig/memcached
+
+- name: start memcached
+  systemd:
+    name: memcached
+    state: started
+    daemon_reload: yes
+    enabled: yes

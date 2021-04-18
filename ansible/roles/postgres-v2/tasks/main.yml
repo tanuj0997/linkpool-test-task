@@ -1,0 +1,133 @@
+---
+- name: include vars
+  include_vars:
+    file: "{{ app_env }}.yml"
+  tags:
+    - always # this is a special tag to always run this task
+
+- name: Install CA certificates
+  yum:
+    name: ca-certificates
+  tags: install_postgres
+
+- name: install selinux management package
+  yum:
+    name: libselinux-python
+  tags: selinux
+
+- name: set selinux to permissive
+  selinux:
+    policy: targeted
+    state: permissive
+  tags: selinux
+
+- name: Install pgdg repository package
+  yum:
+    name: "{{ postgres_repository_url }}"
+  tags: install_postgres
+
+- name: Install PostgreSQL
+  yum:
+    name:
+      - postgresql{{ postgres_version | replace('.', '') }}-server-{{ postgres_full_version }}
+      - postgresql{{ postgres_version | replace('.', '') }}-contrib-{{ postgres_full_version }}
+      - python-psycopg2
+  tags: install_postgres
+
+- name: install extension codes
+  package:
+    name: "{{ loop_item }}"
+    state: present
+  loop:
+    - hypopg_11
+    - pg_repack11
+  loop_control:
+    loop_var: loop_item
+  tags:
+  - extensions
+
+- name: create postgres home
+  file:
+    path: /var/lib/pgsql
+    state: directory
+    owner: postgres
+  tags: install_postgres
+
+- name: create database dir
+  file:
+    path: /var/lib/pgsql/{{ postgres_version }}
+    state: directory
+    owner: postgres
+  tags: install_postgres
+
+- name: Initialize database for postgres 11
+  command: /usr/pgsql-11/bin/postgresql-11-setup initdb creates=/var/lib/pgsql/11/data/postgresql.conf
+  when: postgres_version == 11
+  tags: install_postgres
+
+- name: upload env specific conf
+  template:
+    src: "{{ app_env }}_{{ loop_item }}.{{ type }}.{{ postgres_version }}"
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/{{ loop_item }}"
+    owner: postgres
+    group: postgres
+    mode: 0600
+  loop:
+  - postgresql.conf
+  - pg_hba.conf
+  loop_control:
+    loop_var: loop_item
+  when: "'reports' not in ansible_hostname"
+  notify:
+    - reload postgresql
+    - restart postgresql
+  tags:
+    - install_postgres
+    - config
+
+- name: create archive dir
+  file:
+    path: /var/lib/pgsql/{{ postgres_version }}/data/archive
+    state: directory
+  become_user: postgres
+  become: yes
+  tags: install_postgres
+
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql-{{ postgres_version }}
+    enabled: yes
+    state: started
+  tags: install_postgres
+
+- name: create scripts dir
+  file:
+    path: /var/lib/pgsql/scripts
+    state: directory
+    owner: postgres
+  tags: install_postgres
+
+- name: upload the archive command
+  copy:
+    src: "{{ app_env }}_postgres_archive.sh"
+    dest: /var/lib/pgsql/scripts/postgres_archive.sh
+  tags: install_postgres
+
+- name: setup primary and replica
+  include_tasks: "{{ type }}.yml"
+  tags:
+    - always # this is a special tag to always run this task
+
+- name: upload pgpass
+  template:
+    src: pgpass
+    dest: /var/lib/pgsql/.pgpass
+    mode: 0600
+    owner: postgres
+  tags:
+    - config
+    - install_postgres
+
+- name: Include exporter tasks
+  include_tasks: exporter.yml
+  tags: exporter

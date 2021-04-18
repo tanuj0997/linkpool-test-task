@@ -1,0 +1,44 @@
+---
+- name: get postgres exporter binary
+  unarchive:
+    src: https://github.com/wrouesnel/postgres_exporter/releases/download/v0.8.0/postgres_exporter_v0.8.0_linux-amd64.tar.gz
+    remote_src: yes
+    dest: /tmp
+  tags:
+    - exporter
+
+- name: install exporter binary
+  copy:
+    src: /tmp/postgres_exporter_v0.8.0_linux-amd64/postgres_exporter
+    dest: /usr/bin/
+    remote_src: yes
+    mode: 0755
+  tags:
+    - exporter
+
+- name: upload additional metrics config
+  copy:
+    src: postgres_exporter_queries.yml
+    dest: /etc/postgres_exporter_queries.yml
+  notify:
+    - restart postgres exporter
+  tags:
+    - exporter
+
+- name: upload systemd config for potgres exporter
+  template:
+    src: postgres_exporter.service.j2
+    dest: /etc/systemd/system/postgres_exporter.service
+  notify:
+    - restart postgres exporter
+  tags:
+    - exporter
+
+- name: Enable and start exporter
+  systemd:
+    name: postgres_exporter
+    state: started
+    enabled: yes
+    daemon-reload: yes
+  tags:
+    - exporter

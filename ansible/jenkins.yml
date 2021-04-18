@@ -1,0 +1,14 @@
+---
+- hosts: jenkins
+  vars_prompt:
+    - name: jenkins_username
+      prompt: "What is your username?"
+      private: no
+
+    - name: jenkins_password
+      prompt: "What is your password?"
+      private: yes
+
+  roles:
+    - role: "jenkins-git"
+

@@ -1,0 +1,60 @@
+---
+- name: stop postgres for restore
+  service:
+    name: postgresql-{{ postgres_version }}
+    enabled: yes
+    state: stopped
+  tags:
+    - install_postgres
+    - setup_replica
+
+- name: delete stale data
+  file:
+    path: /var/lib/pgsql/{{ postgres_version }}/data
+    state: absent
+  tags:
+    - install_postgres
+    - setup_replica
+
+- name: get base backup # noqa 301
+  command: pg_basebackup -h {{ groups['postgres'][0] }} -U streaming_postgres -D /var/lib/pgsql/{{ postgres_version }}/data -P -X stream
+  become_user: postgres
+  become: yes
+  tags:
+    - install_postgres
+    - setup_replica
+
+- name: upload recovery.conf
+  template:
+    src: "recovery.conf"
+    dest: /var/lib/pgsql/{{ postgres_version }}/data/recovery.conf
+  become_user: postgres
+  become: yes
+  tags:
+    - install_postgres
+    - setup_replica
+
+- name: upload env specific conf
+  template:
+    src: "{{ app_env }}_{{ loop_item }}.{{ type }}.{{ postgres_version }}"
+    dest: "/var/lib/pgsql/{{ postgres_version }}/data/{{ loop_item }}"
+    owner: postgres
+    group: postgres
+    mode: 0600
+  loop:
+  - postgresql.conf
+  - pg_hba.conf
+  loop_control:
+    loop_var: loop_item
+  tags:
+    - install_postgres
+    - setup_replica
+
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql-{{ postgres_version }}
+    enabled: yes
+    state: started
+  tags:
+    - install_postgres
+    - setup_replica

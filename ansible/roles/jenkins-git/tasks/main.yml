@@ -1,0 +1,59 @@
+---
+- name: setup git cli
+  yum:
+    name: git
+    state: present
+
+- name: install 'git' plugin on jenkins
+  include_role:
+    name: jenkins-plugins
+    tasks_from: install-only
+  vars:
+    - jenkins_target_plugin_full_version: "http://updates.jenkins-ci.org/download/plugins/{{ item.name }}/{{ item.version }}/{{ item.name }}.hpi"
+  loop:
+    - name: git
+      version: "4.3.0"
+
+- name: install 'git' plugin dependencies
+  include_role:
+    name: jenkins-plugins
+    tasks_from: install-only
+  vars:
+    - jenkins_target_plugin_full_version: "{{ item }}"
+  loop:
+    - structs
+    - credentials
+    - ssh-credentials
+    - scm-api
+    - matrix-project
+    - mailer
+    - parameterized-trigger
+    - token-macro
+    - promoted-builds
+    - git-client
+
+- name: install 'github' plugin on jenkins
+  include_role:
+    name: jenkins-plugins
+    tasks_from: install-only
+  vars:
+    - jenkins_target_plugin_full_version: "http://updates.jenkins-ci.org/download/plugins/{{ item.name }}/{{ item.version }}/{{ item.name }}.hpi"
+  loop:
+    - name: github
+      version: "1.31.0"
+
+- name: install 'github' plugin depedencies
+  include_role:
+    name: jenkins-plugins
+    tasks_from: install-only
+  vars:
+    - jenkins_target_plugin_full_version: "{{ item }}"
+  loop:
+    - github-api
+    - git
+    - scm-api
+    - credentials
+    - plain-credentials
+    - structs
+    - token-macro
+    - display-url-api

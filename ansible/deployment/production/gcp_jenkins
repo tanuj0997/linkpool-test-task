@@ -1,0 +1,9 @@
+10.0.3.2 ansible_become=yes become_user=root
+
+[jenkins]
+10.0.3.2
+
+[jenkins:vars]
+infrastructure_branch=master
+domain=jenkins-prod.linkpool.org
+app_env=production

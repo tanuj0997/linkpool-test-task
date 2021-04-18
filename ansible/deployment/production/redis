@@ -1,0 +1,4 @@
+[redis]
+10.0.2.19 app_env=production
+10.0.2.20 app_env=production
+10.0.2.21 app_env=production nobackup=true

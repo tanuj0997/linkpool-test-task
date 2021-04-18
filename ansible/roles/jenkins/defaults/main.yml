@@ -1,0 +1,4 @@
+---
+jenkins_username: admin
+jenkins_password: password
+packer_version: 1.6.0

@@ -1,0 +1,4 @@
+[redis]
+10.0.2.36 app_env=production redis_master=10.0.2.36 slave=false
+10.0.2.37 app_env=production redis_master=10.0.2.36 slave=true
+10.0.2.38 app_env=production redis_master=10.0.2.36 slave=true
