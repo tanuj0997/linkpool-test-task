@@ -73,13 +73,4 @@
     minute: 26
   tags:
   - k8s
-
-- name: circle ci build check
-  copy:
-    src: circleci-status.py
-    dest: /opt/circleci-status.py
-
-- name: add cloud bucket object revert script
-  copy:
-    src: revert-bucket-objects.py
-    dest: /opt/revert-bucket-objects.py
+  
