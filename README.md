@@ -33,6 +33,17 @@ terraform apply
 
 ```
 
+## DockerFile
+
+DockerFile is used to fetch and build image from sample app repository
+
+Sample command to build and push Docker image :
+
+```
+docker build . -t linkpool/testtask:latest
+docker push linkpool/testtask:latest
+```
+
 ## Project Structure
 
 ```
